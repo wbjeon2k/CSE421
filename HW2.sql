@@ -1,4 +1,4 @@
-# make copy of original data
+--make copy of original data
 CREATE new_server AS (SELECT * FROM server);
 ALTER TABLE new_server ADD feature INT NULL;
 ALTER TABLE new_server ADD new_name VARCHAR(100) NULL;
