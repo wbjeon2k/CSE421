@@ -6,3 +6,5 @@ ALTER TABLE new_server ADD type VARCHAR2(10) DEFAULT 'S';
 UPDATE new_server SET new_name = CONCAT(CONCAT('B',model),code);
 SELECT *  FROM new_server;
 
+--prototypes
+SELECT CONCAT('A',model) AS name, NULL AS feature FROM pc;
