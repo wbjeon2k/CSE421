@@ -8,3 +8,5 @@ SELECT *  FROM new_server;
 
 --prototypes
 SELECT CONCAT('A',model) AS name, NULL AS feature FROM pc;
+---PC-->Computer convert
+SELECT CONCAT('A',model) AS name, price, type, cpu, NULL AS feature FROM pc;
