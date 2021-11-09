@@ -86,11 +86,56 @@ def print_computer_list(tmp):
     for i in range(length):
         print('%-8s' % tmp[i][0], '%-8s' % tmp[i][1],
               '%-8s' % tmp[i][2], '%-8s' % tmp[i][3], '%-8s' % tmp[i][4])
+        
+def select_computer():
+    while(True):
+        print("selected 1. Computer")
+        print("""
+            1. Product list
+            2. Recommended products
+            3. Back
+        """)
+        key_input = int(input(), 10)
+        if(key_input == 1):
+            print("#1 List of all computers availble")
+            print_computer_list(computer_list())
+        elif(key_input == 2):
+            print("#2 List of all recommendations")
+            print_computer_list(computer_rec_list())
+        elif(key_input == 3):
+            print("#3 back to menu")
+            break
+        else:
+            raise Exception("Invalid input at select_computer")
 
 def main():
-    print_computer_list(computer_list())
-    print("---------TEST---------")
-    print_computer_list(computer_rec_list())
+    #print_computer_list(computer_list())
+    #print("---------TEST---------")
+    #print_computer_list(computer_rec_list())
+    
+    while(True):
+        print("Main Menu.")
+        print("""
+            What are you looking for?
+            1. Computer
+            2. Television
+            3. Price update
+            4. Exit
+        """)
+        key_input = int(input(),10)
+        try:
+            if(key_input == 1):
+                select_computer()
+            elif(key_input == 4):
+                print("Program Exit!")
+                break
+            else:
+                raise Exception("Invalid input at main menu")
+        except Exception as exp:
+            print(exp)
+            print("Program Shutdown.")
+            break
+            
     
 if __name__ == "__main__":
     main()
