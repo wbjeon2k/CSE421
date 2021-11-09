@@ -95,18 +95,42 @@ def select_computer():
             2. Recommended products
             3. Back
         """)
+        print("INPUT: ")
         key_input = int(input(), 10)
         if(key_input == 1):
             print("#1 List of all computers availble")
             print_computer_list(computer_list())
         elif(key_input == 2):
-            print("#2 List of all recommendations")
+            print("#2 List of all PC recommendations")
             print_computer_list(computer_rec_list())
         elif(key_input == 3):
             print("#3 back to menu")
             break
         else:
             raise Exception("Invalid input at select_computer")
+        
+
+def select_TV():
+    while(True):
+        print("selected 2. TV")
+        print("""
+            1. Search by price
+            2. Recommended products
+            3. Back
+        """)
+        print("INPUT: ")
+        key_input = int(input(), 10)
+        if(key_input == 1):
+            print("#1 Search TV by size")
+            #print_computer_list(computer_list())
+        elif(key_input == 2):
+            print("#2 List of all TV recommendations")
+            #print_computer_list(computer_rec_list())
+        elif(key_input == 3):
+            print("#3 back to menu")
+            break
+        else:
+            raise Exception("Invalid input at select_TV")
 
 def main():
     #print_computer_list(computer_list())
@@ -122,10 +146,13 @@ def main():
             3. Price update
             4. Exit
         """)
+        print("INPUT: ")
         key_input = int(input(),10)
         try:
             if(key_input == 1):
                 select_computer()
+            elif(key_input == 2):
+                select_TV()
             elif(key_input == 4):
                 print("Program Exit!")
                 break
