@@ -110,6 +110,39 @@ def tv_list():
     ret = cursor.fetchall()
     return ret
 
+
+def tv_rec_list():
+    connection = get_connection()
+    cursor = connection.cursor()
+    connection.commit()
+
+    cursor.execute("""
+        --tv2
+        SELECT * FROM (
+        SELECT CONCAT(CONCAT('B',model),code) AS name, price, type, screen_size FROM tv
+        UNION
+        SELECT CONCAT('A',model) AS name, price, 'H' AS type, screen_size FROM hdtv
+        UNION
+        SELECT CONCAT('A',model) AS name, price, 'P' AS type, screen_size FROM pdptv
+        UNION
+        SELECT CONCAT('A',model) AS name, price, 'L' AS type, screen_size FROM lcdtv
+        --ORDER BY type,name) wholetable
+        WHERE price <= (SELECT 1.0*AVG(1.0*price)
+            FROM( SELECT price FROM tv UNION SELECT price FROM hdtv UNION SELECT price FROM pdptv UNION SELECT price FROM lcdtv) pricelist)
+            AND
+            screen_size >= (SELECT 1.0*AVG(1.0*screen_size)
+            FROM( SELECT screen_size FROM tv UNION SELECT screen_size FROM hdtv UNION
+                    SELECT screen_size FROM pdptv UNION SELECT screen_size FROM lcdtv) screenlist)      
+        )
+        WHERE ((1.0*screen_size)/(1.0*price)) = (SELECT MAX((1.0*screen_size)/(1.0*price))
+            FROM( SELECT screen_size,price FROM tv UNION SELECT screen_size,price FROM hdtv UNION
+                    SELECT screen_size,price FROM pdptv UNION SELECT screen_size,price FROM lcdtv) ratiolist)
+        ORDER BY name, screen_size, price
+    """)
+    connection.commit()
+    ret = cursor.fetchall()
+    return ret
+
 def print_computer_list(tmp):
     #tmp = computer_list()
     length = len(tmp)
@@ -124,7 +157,7 @@ def print_computer_list(tmp):
 def print_TV_list(tmp):
     #tmp = computer_list()
     length = len(tmp)
-    print("List of computer, ordered by type, name")
+    print("List of TV, ordered by name,screen_size, price")
     print('%-8s' % "name", '%-8s' % "price",
           '%-8s' % "type", '%-10s' % "screensize")
     for i in range(length):
@@ -174,7 +207,7 @@ def select_TV():
                     print(exp)
             elif(key_input == 2):
                 print("#2 List of all TV recommendations")
-                #print_computer_list(computer_rec_list())
+                print_TV_list(tv_rec_list())
             elif(key_input == 3):
                 print("#3 back to menu")
                 break
