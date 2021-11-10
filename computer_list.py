@@ -35,6 +35,26 @@ def computer_rec_list():
     cursor = connection.cursor()
     connection.commit()
     
+    """
+    a_avgprice_sql = "
+    SELECT 1.0*AVG(price) FROM (
+    SELECT price FROM desktop
+    UNION SELECT price FROM laptop)
+    "
+    cursor.execute(a_avgprice_sql)
+    a_avgprice = cursor.fetchone()[0]
+    
+    print("chk")
+    
+    b_avgprice_sql = "
+    SELECT 1.0*AVG(price) FROM (SELECT price*1.0 FROM pc UNION SELECT price*1.0 FROM server)
+    "
+    cursor.execute(b_avgprice_sql)
+    b_avgprice = cursor.fetchone()[0]
+    
+    print("chk")
+    """
+    
     cursor.execute("""
         SELECT CONCAT('A',model) AS name, price, 'D' AS type, cpu, NULL AS feature FROM desktop
         WHERE (
