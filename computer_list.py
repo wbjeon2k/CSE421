@@ -237,43 +237,130 @@ def update_pc_price():
                     UNION SELECT cpu from laptop) tmp)
     """
     
-    input_sql = (
-    'update PC'
-    'SET price = price*(0.9)'
-    'WHERE cpu <= (SELECT 1.0*AVG(cpu*1.0)'
-                    'FROM (SELECT cpu FROM pc'
-                    'UNION SELECT cpu FROM server'
-                    'UNION SELECT cpu FROM desktop'
-                    'UNION SELECT cpu from laptop) tmp)'
-    )
-    #class_list = ["pc"]
+
     class_list = ['pc', "server", "desktop", "laptop"]
     for cls in class_list:
         print("try update ", cls)
-        #connection = get_connection()
-        #cursor = connection.cursor()
-        #query = (format_str % class_list[i])
         cursor.execute(sql_literal % cls)
         connection.commit()
-    #cursor.close()
+
     print("Updated pc price")
-    #cursor.execute("SELECT * FROM pc")
-    #tmp = cursor.fetchall()
-    #print_computer_list(tmp)
-    print_computer_list(computer_list())
+    #print_computer_list(computer_list())
+    
+def delete_pc_price():
+    connection = get_connection()
+    cursor = connection.cursor()
+    connection.commit()
+    max_sql = """
+    SELECT MAX(price)
+                    FROM (SELECT price FROM pc
+                    UNION SELECT price FROM server
+                    UNION SELECT price FROM desktop
+                    UNION SELECT price from laptop)
+    """
+    cursor.execute(max_sql)
+    maxi = cursor.fetchone()[0]
+    print("Max Price: ", maxi)
+    
+    class_list = ['pc', "server", "desktop", "laptop"]
+    sql_literal = "DELETE FROM %s WHERE price = %i"
+    for cls in class_list:
+        print("try delete ", cls)
+        cursor.execute(sql_literal%(cls,maxi))
+        connection.commit()
         
+    print("Deleted max pc price")
+    #print_computer_list(computer_list())
+
+
+def all_tv_list():
+    connection = get_connection()
+    cursor = connection.cursor()
+    connection.commit()
+    sql_literal = """
+        SELECT * FROM (
+    SELECT CONCAT(CONCAT('B',model),code) AS name, price, type, screen_size FROM tv
+    UNION
+    SELECT CONCAT('A',model) AS name, price, 'H' AS type, screen_size FROM hdtv
+    UNION
+    SELECT CONCAT('A',model) AS name, price, 'P' AS type, screen_size FROM pdptv
+    UNION
+    SELECT CONCAT('A',model) AS name, price, 'L' AS type, screen_size FROM lcdtv
+    ORDER BY type,name)
+    """
+
+    cursor.execute(sql_literal)
+    ret = cursor.fetchall()
+    return ret
+      
 def update_tv_price():
     connection = get_connection()
     cursor = connection.cursor()
     connection.commit()
     
+    connection.commit()
+    cursor.execute("commit")
+    
+    format_str = """
+    UPDATE %s SET price = price*(1.1)
+    WHERE screen_size = (SELECT MAX(screen_size)
+                    FROM (SELECT screen_size FROM tv
+                    UNION SELECT screen_size FROM hdtv
+                    UNION SELECT screen_size FROM pdptv
+                    UNION SELECT screen_size from lcdtv))
+    """
+    class_list = ["tv", "hdtv", "pdptv", "lcdtv"]
+    for cls in class_list:
+        print("try update ", cls)
+        cursor.execute(format_str % cls)
+        connection.commit()
+        
+    print("Updated tv price")
+    
+
+def delete_tv_price():
+    connection = get_connection()
+    cursor = connection.cursor()
+    connection.commit()
+    
+    cursor.execute("""
+                   SELECT MAX((1.0*screen_size)/(1.0*price))
+                FROM( SELECT screen_size,price FROM tv
+                UNION SELECT screen_size,price FROM hdtv
+                UNION SELECT screen_size,price FROM pdptv
+                UNION SELECT screen_size,price FROM lcdtv)
+                   """)
+    maxi = cursor.fetchone()[0]
+    
+    format_str = """
+        DELETE FROM %s
+        WHERE (screen_size*1.0)/(price*1.0) = %f
+    """
+    connection.commit()
+    all_list = all_tv_list()
+    for tv in all_list:
+        if((tv[3]*1.0)/(tv[1]*1.0) == maxi):
+            print("match TV: ",tv[0])
+    
+    class_list = ["tv", "hdtv", "pdptv", "lcdtv"]
+    for cls in class_list:
+        print("try delete ", cls)
+        cursor.execute(format_str %(cls,maxi))
+        connection.commit()
+
+    print("deleted tv price")
+    
+
+    
 def update_price():
     update_pc_price()
-    #print("PC price updated as")
-    #print_computer_list(computer_list())
+    delete_pc_price()
+    print("PC price updated as")
+    print_computer_list(computer_list())
     update_tv_price()
+    delete_tv_price()
     print("TV price updated as")
-    #print_computer_list(computer_list())
+    print_TV_list(all_tv_list())
 
 def initial_warnings():
     print("""
