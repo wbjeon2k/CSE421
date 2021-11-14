@@ -4,6 +4,8 @@ import cx_Oracle
 ###########################
 #acquire connection with user, password and dsn
 ###########################
+
+
 def get_connection():
     connection = cx_Oracle.connect(
         user="unist",
@@ -15,6 +17,8 @@ def get_connection():
 ###########################
 #return all the list of computers
 ###########################
+
+
 def computer_list():
     connection = get_connection()
     cursor = connection.cursor()
@@ -39,11 +43,13 @@ def computer_list():
 #return all the recommeneded list of computers,
 #print average price and cpu value of both company A and B.
 ###########################
+
+
 def computer_rec_list():
     connection = get_connection()
     cursor = connection.cursor()
     connection.commit()
-    
+
     a_avgprice_sql = """
     SELECT 1.0*AVG(price*1.0) FROM(
         SELECT price FROM desktop
@@ -52,7 +58,7 @@ def computer_rec_list():
     cursor.execute(a_avgprice_sql)
     a_avgprice = cursor.fetchone()[0]
     print("*average price of A company(laptop,desktop): ", a_avgprice)
-    
+
     a_avgcpu_sql = """
     SELECT 1.0*AVG(cpu*1.0) FROM(
         SELECT cpu FROM desktop
@@ -61,7 +67,7 @@ def computer_rec_list():
     cursor.execute(a_avgcpu_sql)
     a_avgcpu = cursor.fetchone()[0]
     print("*average cpu of A company(laptop,desktop): ", a_avgcpu)
-    
+
     b_avgprice_sql = """
     SELECT 1.0*AVG(price*1.0) FROM(
         SELECT price FROM pc
@@ -79,7 +85,7 @@ def computer_rec_list():
     cursor.execute(b_avgcpu_sql)
     b_avgcpu = cursor.fetchone()[0]
     print("*average cpu of B company(pc,server): ", b_avgcpu)
-    
+
     cursor.execute("""
         --desktop recommend
         SELECT CONCAT('A',model) AS name, price, 'D' AS type, cpu, NULL AS feature FROM desktop
@@ -126,7 +132,7 @@ def computer_rec_list():
             cpu >= (SELECT 1.0*AVG(cpu*1.0) FROM( SELECT cpu FROM pc UNION SELECT cpu FROM server)) 
         )
     """)
-    
+
     connection.commit()
     ret = cursor.fetchall()
     cursor.close()
@@ -161,6 +167,8 @@ def return_price_query(price_input):
 #try to acquire price input,
 #run the return_price_query with the input.
 ###########################
+
+
 def tv_list():
     #print("Connection established")
     connection = get_connection()
@@ -168,7 +176,7 @@ def tv_list():
     connection.commit()
     search_price = input()
     price_int = int(search_price, 10)
-    if(price_int<0):
+    if(price_int < 0):
         raise Exception("Error at tv price input: input must be positive")
     cursor.execute(return_price_query(search_price))
     connection.commit()
@@ -176,16 +184,55 @@ def tv_list():
     cursor.close()
     return ret
 
+
+def get_singe_select_value(sql):
+    connection = get_connection()
+    cursor = connection.cursor()
+    connection.commit()
+    
+    cursor.execute(sql)
+    ret = cursor.fetchone()[0]
+    
+    cursor.close()
+    return ret
+    
+    
+
 ###########################
 #acquire tv recommend list
 #try to acquire price input,
 #run the return_price_query with the input.
 ###########################
+
+
 def tv_rec_list():
     connection = get_connection()
     cursor = connection.cursor()
     connection.commit()
 
+    avg_tv_price_sql = """
+    SELECT 1.0*AVG(1.0*price)
+            FROM( SELECT price FROM tv UNION SELECT price FROM hdtv
+                UNION SELECT price FROM pdptv UNION SELECT price FROM lcdtv) pricelist
+    """
+    avg_tv_screen_sql = """
+        SELECT 1.0*AVG(1.0*screen_size)
+            FROM( SELECT screen_size FROM tv UNION SELECT screen_size FROM hdtv UNION
+                    SELECT screen_size FROM pdptv UNION SELECT screen_size FROM lcdtv) screenlist
+    """
+    max_tv_ratio_sql = """
+        SELECT MAX((1.0*screen_size)/(1.0*price))
+            FROM( SELECT screen_size,price FROM tv UNION SELECT screen_size,price FROM hdtv UNION
+                    SELECT screen_size,price FROM pdptv UNION SELECT screen_size,price FROM lcdtv) ratiolist
+    """
+    
+    avg_price = get_singe_select_value(avg_tv_price_sql)
+    avg_size = get_singe_select_value(avg_tv_screen_sql)
+    max_ratio = get_singe_select_value(max_tv_ratio_sql)
+
+    print('%-12s' % "avg_price", avg_price)
+    print('%-12s' % "avg_size", avg_size)
+    print('%-12s' % "max_ratio", max_ratio)
     cursor.execute("""
         --tv2
         SELECT * FROM (
@@ -196,16 +243,19 @@ def tv_rec_list():
         SELECT CONCAT('A',model) AS name, price, 'P' AS type, screen_size FROM pdptv
         UNION
         SELECT CONCAT('A',model) AS name, price, 'L' AS type, screen_size FROM lcdtv
+           
+        )
         WHERE price <= (SELECT 1.0*AVG(1.0*price)
-            FROM( SELECT price FROM tv UNION SELECT price FROM hdtv UNION SELECT price FROM pdptv UNION SELECT price FROM lcdtv) pricelist)
+            FROM( SELECT price FROM tv UNION SELECT price FROM hdtv
+                UNION SELECT price FROM pdptv UNION SELECT price FROM lcdtv) pricelist)
             AND
             screen_size >= (SELECT 1.0*AVG(1.0*screen_size)
             FROM( SELECT screen_size FROM tv UNION SELECT screen_size FROM hdtv UNION
-                    SELECT screen_size FROM pdptv UNION SELECT screen_size FROM lcdtv) screenlist)      
-        )
-        WHERE ((1.0*screen_size)/(1.0*price)) = (SELECT MAX((1.0*screen_size)/(1.0*price))
+                    SELECT screen_size FROM pdptv UNION SELECT screen_size FROM lcdtv) screenlist)
+            AND
+            ((1.0*screen_size)/(1.0*price)) = (SELECT MAX((1.0*screen_size)/(1.0*price))
             FROM( SELECT screen_size,price FROM tv UNION SELECT screen_size,price FROM hdtv UNION
-                    SELECT screen_size,price FROM pdptv UNION SELECT screen_size,price FROM lcdtv) ratiolist)
+                    SELECT screen_size,price FROM pdptv UNION SELECT screen_size,price FROM lcdtv) ratiolist)   
         ORDER BY name, screen_size, price
     """)
     connection.commit()
@@ -226,16 +276,18 @@ def print_computer_list(tmp):
           List of computer, ordered by type, name
           ----------------------------------------
     """)
-    print('%-8s' % "name", '%-8s' % "price", 
+    print('%-8s' % "name", '%-8s' % "price",
           '%-8s' % "type", '%-8s' % "cpu", '%-8s' % "feature")
     for i in range(length):
         print('%-8s' % tmp[i][0], '%-8s' % tmp[i][1],
               '%-8s' % tmp[i][2], '%-8s' % tmp[i][3], '%-8s' % tmp[i][4])
-        
+
 ###########################
 #print the tvs in the following format
 #given tmp as the list of tvs
 ###########################
+
+
 def print_TV_list(tmp):
     #tmp = computer_list()
     length = len(tmp)
@@ -251,9 +303,11 @@ def print_TV_list(tmp):
               '%-8s' % tmp[i][2], '%-10s' % tmp[i][3])
 
 ###########################
-#this menu is called 
+#this menu is called
 #when you select 1 in the main menu.
 ###########################
+
+
 def select_computer():
     while(True):
         print("selected 1. Computer")
@@ -275,11 +329,13 @@ def select_computer():
             break
         else:
             raise Exception("Invalid input at select_computer")
-        
+
 ###########################
 #this menu is called
 #when you select 2 in the main menu.
 ###########################
+
+
 def select_TV():
     while(True):
         print("selected 2. TV")
@@ -307,11 +363,13 @@ def select_TV():
             else:
                 raise Exception("Invalid input at select_TV")
         except Exception as exp:
-            print("ERROR: ",exp)
+            print("ERROR: ", exp)
 
 ###########################
 #update only pc prices
 ###########################
+
+
 def update_pc_price():
     #https://stackoverflow.com/a/42420331
     #fuck
@@ -328,7 +386,6 @@ def update_pc_price():
                     UNION SELECT cpu FROM desktop
                     UNION SELECT cpu from laptop) tmp)
     """
-    
 
     class_list = ['pc', "server", "desktop", "laptop"]
     for cls in class_list:
@@ -342,6 +399,8 @@ def update_pc_price():
 ###########################
 #delete only pc prices
 ###########################
+
+
 def delete_pc_price():
     connection = get_connection()
     cursor = connection.cursor()
@@ -356,20 +415,22 @@ def delete_pc_price():
     cursor.execute(max_sql)
     maxi = cursor.fetchone()[0]
     print("Max Price: ", maxi)
-    
+
     class_list = ['pc', "server", "desktop", "laptop"]
     sql_literal = "DELETE FROM %s WHERE price = %i"
     for cls in class_list:
         print("try delete ", cls)
-        cursor.execute(sql_literal%(cls,maxi))
+        cursor.execute(sql_literal % (cls, maxi))
         connection.commit()
-        
+
     print("Deleted max pc price")
     #print_computer_list(computer_list())
 
 ###########################
 #custom list of all tvs
 ###########################
+
+
 def all_tv_list():
     connection = get_connection()
     cursor = connection.cursor()
@@ -398,10 +459,10 @@ def update_tv_price():
     connection = get_connection()
     cursor = connection.cursor()
     connection.commit()
-    
+
     connection.commit()
     cursor.execute("commit")
-    
+
     format_str = """
     UPDATE %s SET price = price*(1.1)
     WHERE screen_size = (SELECT MAX(screen_size)
@@ -415,18 +476,20 @@ def update_tv_price():
         print("try update ", cls)
         cursor.execute(format_str % cls)
         connection.commit()
-        
+
     print("Updated tv price")
-    
+
 ###########################
 #delete price of all tvs those match the condition.
 #print out which tvs are deleted
 ###########################
+
+
 def delete_tv_price():
     connection = get_connection()
     cursor = connection.cursor()
     connection.commit()
-    
+
     cursor.execute("""
                    SELECT MAX((1.0*screen_size)/(1.0*price))
                 FROM( SELECT screen_size,price FROM tv
@@ -435,7 +498,7 @@ def delete_tv_price():
                 UNION SELECT screen_size,price FROM lcdtv)
                    """)
     maxi = cursor.fetchone()[0]
-    
+
     format_str = """
         DELETE FROM %s
         WHERE (screen_size*1.0)/(price*1.0) = %f
@@ -444,16 +507,16 @@ def delete_tv_price():
     all_list = all_tv_list()
     for tv in all_list:
         if((tv[3]*1.0)/(tv[1]*1.0) == maxi):
-            print("match TV: ",tv[0])
-    
+            print("match TV: ", tv[0])
+
     class_list = ["tv", "hdtv", "pdptv", "lcdtv"]
     for cls in class_list:
         print("try delete ", cls)
-        cursor.execute(format_str %(cls,maxi))
+        cursor.execute(format_str % (cls, maxi))
         connection.commit()
 
     print("deleted tv price")
-    
+
 
 ###########################
 #this menu is called
@@ -470,6 +533,8 @@ def update_price():
     print_TV_list(all_tv_list())
 
 #initial booting message
+
+
 def initial_warnings():
     print("""
           ####################################################################
@@ -498,17 +563,17 @@ def initial_warnings():
           """)
     tmp = input()
 
+
 def main():
     #print_computer_list(computer_list())
     #print("---------TEST---------")
     #print_computer_list(computer_rec_list())
     #print(return_price_query("ABC"))
     #print(tv_list())
-    
-    
+
     #init_db()
     initial_warnings()
-    
+
     print("""
           try connection as below setting:
           
@@ -523,7 +588,7 @@ def main():
           """)
     connection = get_connection()
     print("""connection successful!""")
-    
+
     #does not terminate for invalid inputs,
     #just fall back to original menu.
     while(True):
