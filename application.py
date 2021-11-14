@@ -482,6 +482,7 @@ def initial_warnings():
           In SqlDeveloper preferences:
             Tools > Preferences > Database > Worksheet,
             check the option for "New Worksheet to use unshared connction"
+            (한국어: "도구>환경설정>워크시트>공유되지 않은 접속을 사용할 새 워크시트)
           
           If not, update may not presume and just hang, due to oracle bug.
           (Refer to https://stackoverflow.com/a/42420331)
