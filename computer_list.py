@@ -1,6 +1,9 @@
 import cx_Oracle
 #import client
 
+###########################
+#acquire connection with user, password and dsn
+###########################
 def get_connection():
     connection = cx_Oracle.connect(
         user="unist",
@@ -9,7 +12,9 @@ def get_connection():
     )
     return connection
 
-#print("Connection established")
+###########################
+#return all the list of computers
+###########################
 def computer_list():
     connection = get_connection()
     cursor = connection.cursor()
@@ -30,6 +35,10 @@ def computer_list():
     cursor.close()
     return ret
 
+###########################
+#return all the recommeneded list of computers,
+#print average price and cpu value of both company A and B.
+###########################
 def computer_rec_list():
     connection = get_connection()
     cursor = connection.cursor()
@@ -72,6 +81,7 @@ def computer_rec_list():
     print("*average cpu of B company(pc,server): ", b_avgcpu)
     
     cursor.execute("""
+        --desktop recommend
         SELECT CONCAT('A',model) AS name, price, 'D' AS type, cpu, NULL AS feature FROM desktop
         WHERE (
             price <= (SELECT 1.0*AVG(price*1.0) FROM( SELECT price FROM desktop UNION SELECT price FROM laptop))
@@ -79,6 +89,7 @@ def computer_rec_list():
             cpu >= (SELECT 1.0*AVG(cpu*1.0) FROM( SELECT cpu FROM desktop UNION SELECT cpu FROM laptop))
         )
         UNION
+        --laptop recommend
         SELECT CONCAT('A',model) AS name, price, 'L' AS type, cpu, weight AS feature FROM laptop
         WHERE (
             price <= (SELECT 1.0*AVG(price*1.0) FROM( SELECT price FROM desktop UNION SELECT price FROM laptop))
@@ -121,6 +132,11 @@ def computer_rec_list():
     cursor.close()
     return ret
 
+
+###########################
+#sql query format string.
+#put the price in %s to use it.
+###########################
 def return_price_query(price_input):
     format_str = """
     SELECT * FROM (
@@ -140,6 +156,11 @@ def return_price_query(price_input):
     ret = format_str % price_pair
     return ret
 
+###########################
+#acquire ty list by price
+#try to acquire price input,
+#run the return_price_query with the input.
+###########################
 def tv_list():
     #print("Connection established")
     connection = get_connection()
@@ -155,7 +176,11 @@ def tv_list():
     cursor.close()
     return ret
 
-
+###########################
+#acquire tv recommend list
+#try to acquire price input,
+#run the return_price_query with the input.
+###########################
 def tv_rec_list():
     connection = get_connection()
     cursor = connection.cursor()
@@ -171,7 +196,6 @@ def tv_rec_list():
         SELECT CONCAT('A',model) AS name, price, 'P' AS type, screen_size FROM pdptv
         UNION
         SELECT CONCAT('A',model) AS name, price, 'L' AS type, screen_size FROM lcdtv
-        --ORDER BY type,name) wholetable
         WHERE price <= (SELECT 1.0*AVG(1.0*price)
             FROM( SELECT price FROM tv UNION SELECT price FROM hdtv UNION SELECT price FROM pdptv UNION SELECT price FROM lcdtv) pricelist)
             AND
@@ -189,6 +213,11 @@ def tv_rec_list():
     cursor.close()
     return ret
 
+
+###########################
+#print the computers in the following format
+#given tmp as the list of computers
+###########################
 def print_computer_list(tmp):
     #tmp = computer_list()
     length = len(tmp)
@@ -203,7 +232,10 @@ def print_computer_list(tmp):
         print('%-8s' % tmp[i][0], '%-8s' % tmp[i][1],
               '%-8s' % tmp[i][2], '%-8s' % tmp[i][3], '%-8s' % tmp[i][4])
         
-
+###########################
+#print the tvs in the following format
+#given tmp as the list of tvs
+###########################
 def print_TV_list(tmp):
     #tmp = computer_list()
     length = len(tmp)
@@ -217,7 +249,11 @@ def print_TV_list(tmp):
     for i in range(length):
         print('%-8s' % tmp[i][0], '%-8s' % tmp[i][1],
               '%-8s' % tmp[i][2], '%-10s' % tmp[i][3])
-        
+
+###########################
+#this menu is called 
+#when you select 1 in the main menu.
+###########################
 def select_computer():
     while(True):
         print("selected 1. Computer")
@@ -240,7 +276,10 @@ def select_computer():
         else:
             raise Exception("Invalid input at select_computer")
         
-
+###########################
+#this menu is called
+#when you select 2 in the main menu.
+###########################
 def select_TV():
     while(True):
         print("selected 2. TV")
@@ -270,6 +309,9 @@ def select_TV():
         except Exception as exp:
             print("ERROR: ",exp)
 
+###########################
+#update only pc prices
+###########################
 def update_pc_price():
     #https://stackoverflow.com/a/42420331
     #fuck
@@ -296,7 +338,10 @@ def update_pc_price():
 
     print("Updated pc price")
     #print_computer_list(computer_list())
-    
+
+###########################
+#delete only pc prices
+###########################
 def delete_pc_price():
     connection = get_connection()
     cursor = connection.cursor()
@@ -322,7 +367,9 @@ def delete_pc_price():
     print("Deleted max pc price")
     #print_computer_list(computer_list())
 
-
+###########################
+#custom list of all tvs
+###########################
 def all_tv_list():
     connection = get_connection()
     cursor = connection.cursor()
@@ -342,7 +389,11 @@ def all_tv_list():
     cursor.execute(sql_literal)
     ret = cursor.fetchall()
     return ret
-      
+
+
+###########################
+#update price of all tvs
+###########################
 def update_tv_price():
     connection = get_connection()
     cursor = connection.cursor()
@@ -367,7 +418,10 @@ def update_tv_price():
         
     print("Updated tv price")
     
-
+###########################
+#delete price of all tvs those match the condition.
+#print out which tvs are deleted
+###########################
 def delete_tv_price():
     connection = get_connection()
     cursor = connection.cursor()
@@ -401,7 +455,10 @@ def delete_tv_price():
     print("deleted tv price")
     
 
-    
+###########################
+#this menu is called
+#when you select 3 in the main menu.
+###########################
 def update_price():
     update_pc_price()
     delete_pc_price()
@@ -412,6 +469,7 @@ def update_price():
     print("TV price updated as")
     print_TV_list(all_tv_list())
 
+#initial booting message
 def initial_warnings():
     print("""
           ####################################################################
@@ -425,7 +483,8 @@ def initial_warnings():
             Tools > Preferences > Database > Worksheet,
             check the option for "New Worksheet to use unshared connction"
           
-          If not, update will not presume and just hang.
+          If not, update may not presume and just hang, due to oracle bug.
+          (Refer to https://stackoverflow.com/a/42420331)
           
           ##2. Initialize DB##
           Please initialize all the DB information
@@ -462,8 +521,10 @@ def main():
           
           """)
     connection = get_connection()
-    print("connection successful!")
+    print("""connection successful!""")
     
+    #does not terminate for invalid inputs,
+    #just fall back to original menu.
     while(True):
         print("Main Menu.")
         print("""
@@ -483,7 +544,7 @@ def main():
             elif(key_input == 3):
                 update_price()
             elif(key_input == 4):
-                print("Program Exit!")
+                print("""Program Exit!""")
                 break
             else:
                 raise Exception("Invalid input at main menu")
