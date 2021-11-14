@@ -4,7 +4,7 @@ import cx_Oracle
 def get_connection():
     connection = cx_Oracle.connect(
         user="unist",
-        password="admin",
+        password="unist",
         dsn="localhost:1521"
     )
     return connection
@@ -35,62 +35,84 @@ def computer_rec_list():
     cursor = connection.cursor()
     connection.commit()
     
+    a_avgprice_sql = """
+    SELECT 1.0*AVG(price*1.0) FROM(
+        SELECT price FROM desktop
+        UNION SELECT price FROM laptop)
     """
-    a_avgprice_sql = "
-    SELECT 1.0*AVG(price) FROM (
-    SELECT price FROM desktop
-    UNION SELECT price FROM laptop)
-    "
     cursor.execute(a_avgprice_sql)
     a_avgprice = cursor.fetchone()[0]
+    print("*average price of A company(laptop,desktop): ", a_avgprice)
     
-    print("chk")
+    a_avgcpu_sql = """
+    SELECT 1.0*AVG(cpu*1.0) FROM(
+        SELECT cpu FROM desktop
+        UNION SELECT cpu FROM laptop)
+    """
+    cursor.execute(a_avgcpu_sql)
+    a_avgcpu = cursor.fetchone()[0]
+    print("*average cpu of A company(laptop,desktop): ", a_avgcpu)
     
-    b_avgprice_sql = "
-    SELECT 1.0*AVG(price) FROM (SELECT price*1.0 FROM pc UNION SELECT price*1.0 FROM server)
-    "
+    b_avgprice_sql = """
+    SELECT 1.0*AVG(price*1.0) FROM(
+        SELECT price FROM pc
+        UNION SELECT price FROM server)
+    """
     cursor.execute(b_avgprice_sql)
     b_avgprice = cursor.fetchone()[0]
-    
-    print("chk")
+    print("*average price of B company(pc,server): ", b_avgprice)
+
+    b_avgcpu_sql = """
+    SELECT 1.0*AVG(cpu*1.0) FROM(
+        SELECT cpu FROM pc
+        UNION SELECT cpu FROM server)
     """
+    cursor.execute(b_avgcpu_sql)
+    b_avgcpu = cursor.fetchone()[0]
+    print("*average cpu of B company(pc,server): ", b_avgcpu)
     
     cursor.execute("""
         SELECT CONCAT('A',model) AS name, price, 'D' AS type, cpu, NULL AS feature FROM desktop
         WHERE (
-            price <= (SELECT 1.0*AVG(1.0*price) FROM desktop)
+            price <= (SELECT 1.0*AVG(price*1.0) FROM( SELECT price FROM desktop UNION SELECT price FROM laptop))
         AND
-            cpu >= (SELECT 1.0*AVG(1.0*cpu) FROM desktop)
+            cpu >= (SELECT 1.0*AVG(cpu*1.0) FROM( SELECT cpu FROM desktop UNION SELECT cpu FROM laptop))
         )
         UNION
         SELECT CONCAT('A',model) AS name, price, 'L' AS type, cpu, weight AS feature FROM laptop
         WHERE (
-            price <= (SELECT 1.0*AVG(1.0*price) FROM laptop)
+            price <= (SELECT 1.0*AVG(price*1.0) FROM( SELECT price FROM desktop UNION SELECT price FROM laptop))
         AND
-            cpu >= (SELECT 1.0*AVG(1.0*cpu) FROM laptop)
+            cpu >= (SELECT 1.0*AVG(cpu*1.0) FROM( SELECT cpu FROM desktop UNION SELECT cpu FROM laptop))
         )
         UNION
         --B-PC-desktop recommend
         SELECT CONCAT(CONCAT('B',model),code) AS name, price, type, cpu, NULL AS feature FROM pc
         WHERE(
-            type = 'D' AND
-            price <= (SELECT 1.0*AVG(1.0*price) FROM pc WHERE type='D') AND
-            cpu >= (SELECT 1.0*AVG(1.0*cpu) FROM pc WHERE type='D') 
+            type = 'D'
+            AND
+            price <= (SELECT 1.0*AVG(price*1.0) FROM( SELECT price FROM pc UNION SELECT price FROM server))
+            AND
+            cpu >= (SELECT 1.0*AVG(cpu*1.0) FROM( SELECT cpu FROM pc UNION SELECT cpu FROM server)) 
         )
         UNION
         --B-PC-laptop recommend
         SELECT CONCAT(CONCAT('B',model),code) AS name, price, type, cpu, NULL AS feature FROM pc
         WHERE(
-            type = 'L' AND
-            price <= (SELECT 1.0*AVG(1.0*price) FROM pc WHERE type='L') AND
-            cpu >= (SELECT 1.0*AVG(1.0*cpu) FROM pc WHERE type='L') 
+            type = 'L'
+            AND
+            price <= (SELECT 1.0*AVG(price*1.0) FROM( SELECT price FROM pc UNION SELECT price FROM server))
+            AND
+            cpu >= (SELECT 1.0*AVG(cpu*1.0) FROM( SELECT cpu FROM pc UNION SELECT cpu FROM server)) 
         )
         UNION
         --B-server-recommend
         SELECT CONCAT(CONCAT('B',model),code) AS name, price, 'S' AS type, cpu, NULL AS feature FROM server
         WHERE(
-            price <= (SELECT 1.0*AVG(1.0*price) FROM server) AND
-            cpu >= (SELECT 1.0*AVG(1.0*cpu) FROM server) 
+            
+            price <= (SELECT 1.0*AVG(price*1.0) FROM( SELECT price FROM pc UNION SELECT price FROM server))
+            AND
+            cpu >= (SELECT 1.0*AVG(cpu*1.0) FROM( SELECT cpu FROM pc UNION SELECT cpu FROM server)) 
         )
     """)
     
@@ -170,7 +192,11 @@ def tv_rec_list():
 def print_computer_list(tmp):
     #tmp = computer_list()
     length = len(tmp)
-    print("List of computer, ordered by type, name")
+    print("""
+          ----------------------------------------
+          List of computer, ordered by type, name
+          ----------------------------------------
+    """)
     print('%-8s' % "name", '%-8s' % "price", 
           '%-8s' % "type", '%-8s' % "cpu", '%-8s' % "feature")
     for i in range(length):
@@ -181,7 +207,11 @@ def print_computer_list(tmp):
 def print_TV_list(tmp):
     #tmp = computer_list()
     length = len(tmp)
-    print("List of TV, ordered by name,screen_size, price")
+    print("""
+          ----------------------------------------------
+          List of TV, ordered by name,screen_size, price
+          ----------------------------------------------
+    """)
     print('%-8s' % "name", '%-8s' % "price",
           '%-8s' % "type", '%-10s' % "screensize")
     for i in range(length):
@@ -424,9 +454,11 @@ def main():
           
           connection = cx_Oracle.connect(
             user="unist",
-            password="admin",
+            password="unist",
             dsn="localhost:1521"
           )
+          
+          !!!Check the user/password is conenction fails!!!
           
           """)
     connection = get_connection()
