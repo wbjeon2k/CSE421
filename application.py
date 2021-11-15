@@ -220,19 +220,36 @@ def tv_rec_list():
             FROM( SELECT screen_size FROM tv UNION SELECT screen_size FROM hdtv UNION
                     SELECT screen_size FROM pdptv UNION SELECT screen_size FROM lcdtv) screenlist
     """
-    max_tv_ratio_sql = """
-        SELECT MAX((1.0*screen_size)/(1.0*price))
-            FROM( SELECT screen_size,price FROM tv UNION SELECT screen_size,price FROM hdtv UNION
-                    SELECT screen_size,price FROM pdptv UNION SELECT screen_size,price FROM lcdtv) ratiolist
-    """
     
+    max_tv_ratio_above_avg_sql = """
+        SELECT MAX((screen_size*1.0)/(price*1.0)) FROM
+(SELECT * FROM (
+        SELECT CONCAT(CONCAT('B',model),code) AS name, price, type, screen_size FROM tv
+        UNION
+        SELECT CONCAT('A',model) AS name, price, 'H' AS type, screen_size FROM hdtv
+        UNION
+        SELECT CONCAT('A',model) AS name, price, 'P' AS type, screen_size FROM pdptv
+        UNION
+        SELECT CONCAT('A',model) AS name, price, 'L' AS type, screen_size FROM lcdtv
+        )
+        WHERE price <= (SELECT 1.0*AVG(1.0*price)
+            FROM( SELECT price FROM tv UNION SELECT price FROM hdtv
+                UNION SELECT price FROM pdptv UNION SELECT price FROM lcdtv) pricelist)
+            AND
+            screen_size >= (SELECT 1.0*AVG(1.0*screen_size)
+            FROM( SELECT screen_size FROM tv UNION SELECT screen_size FROM hdtv UNION
+                    SELECT screen_size FROM pdptv UNION SELECT screen_size FROM lcdtv) screenlist))
+    """
     avg_price = get_singe_select_value(avg_tv_price_sql)
     avg_size = get_singe_select_value(avg_tv_screen_sql)
-    max_ratio = get_singe_select_value(max_tv_ratio_sql)
+    max_tv_ratio_above_avg = get_singe_select_value(max_tv_ratio_above_avg_sql)
 
-    print('%-12s' % "avg_price", avg_price)
-    print('%-12s' % "avg_size", avg_size)
-    print('%-12s' % "max_ratio", max_ratio)
+    print('%-20s' % "*avg_price", avg_price)
+    print('%-20s' % "*avg_size", avg_size)
+    print('%-20s' % "*max_tv_ratio_above_avg", max_tv_ratio_above_avg)
+    print("*****")
+    print("""max_tv_ratio_above_avg is the maximum size/price ratio of the tvs \nthose match price <= avg_price AND size >= avg_size""")
+    print("*****")
     
     new_rec_sql = """
     SELECT * FROM (
