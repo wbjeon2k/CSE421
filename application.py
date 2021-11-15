@@ -233,8 +233,57 @@ def tv_rec_list():
     print('%-12s' % "avg_price", avg_price)
     print('%-12s' % "avg_size", avg_size)
     print('%-12s' % "max_ratio", max_ratio)
-    cursor.execute("""
-        --tv2
+    
+    new_rec_sql = """
+    SELECT * FROM (
+SELECT * FROM (
+        SELECT CONCAT(CONCAT('B',model),code) AS name, price, type, screen_size FROM tv
+        UNION
+        SELECT CONCAT('A',model) AS name, price, 'H' AS type, screen_size FROM hdtv
+        UNION
+        SELECT CONCAT('A',model) AS name, price, 'P' AS type, screen_size FROM pdptv
+        UNION
+        SELECT CONCAT('A',model) AS name, price, 'L' AS type, screen_size FROM lcdtv
+        )
+        WHERE price <= (SELECT 1.0*AVG(1.0*price)
+            FROM( SELECT price FROM tv UNION SELECT price FROM hdtv
+                UNION SELECT price FROM pdptv UNION SELECT price FROM lcdtv) pricelist)
+            AND
+            screen_size >= (SELECT 1.0*AVG(1.0*screen_size)
+            FROM( SELECT screen_size FROM tv UNION SELECT screen_size FROM hdtv UNION
+                    SELECT screen_size FROM pdptv UNION SELECT screen_size FROM lcdtv) screenlist)
+        ORDER BY name, screen_size, price) aboveavg
+WHERE 
+(screen_size*1.0)/(price*1.0) = (SELECT MAX((screen_size*1.0)/(price*1.0)) FROM
+(SELECT * FROM (
+        SELECT CONCAT(CONCAT('B',model),code) AS name, price, type, screen_size FROM tv
+        UNION
+        SELECT CONCAT('A',model) AS name, price, 'H' AS type, screen_size FROM hdtv
+        UNION
+        SELECT CONCAT('A',model) AS name, price, 'P' AS type, screen_size FROM pdptv
+        UNION
+        SELECT CONCAT('A',model) AS name, price, 'L' AS type, screen_size FROM lcdtv
+        )
+        WHERE price <= (SELECT 1.0*AVG(1.0*price)
+            FROM( SELECT price FROM tv UNION SELECT price FROM hdtv
+                UNION SELECT price FROM pdptv UNION SELECT price FROM lcdtv) pricelist)
+            AND
+            screen_size >= (SELECT 1.0*AVG(1.0*screen_size)
+            FROM( SELECT screen_size FROM tv UNION SELECT screen_size FROM hdtv UNION
+                    SELECT screen_size FROM pdptv UNION SELECT screen_size FROM lcdtv) screenlist))
+    )
+   
+    """
+    
+    cursor.execute(new_rec_sql)
+    connection.commit()
+    ret = cursor.fetchall()
+    cursor.close()
+    return ret
+
+###########
+old_rec_sql = """
+--tv2
         SELECT * FROM (
         SELECT CONCAT(CONCAT('B',model),code) AS name, price, type, screen_size FROM tv
         UNION
@@ -257,12 +306,7 @@ def tv_rec_list():
             FROM( SELECT screen_size,price FROM tv UNION SELECT screen_size,price FROM hdtv UNION
                     SELECT screen_size,price FROM pdptv UNION SELECT screen_size,price FROM lcdtv) ratiolist)   
         ORDER BY name, screen_size, price
-    """)
-    connection.commit()
-    ret = cursor.fetchall()
-    cursor.close()
-    return ret
-
+"""
 
 ###########################
 #print the computers in the following format
