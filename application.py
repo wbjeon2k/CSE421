@@ -559,10 +559,24 @@ def delete_tv_price():
                 UNION SELECT screen_size,price FROM lcdtv)
                    """)
     maxi = cursor.fetchone()[0]
+    cursor.execute("""
+                   SELECT screen_size, price FROM( SELECT screen_size,price FROM tv
+                UNION SELECT screen_size,price FROM hdtv
+                UNION SELECT screen_size,price FROM pdptv
+                UNION SELECT screen_size,price FROM lcdtv)
+                WHERE (screen_size*1.0)/(price*1.0) = %f
+                   """ % maxi)
+    maxi1 = cursor.fetchall()
+    print(maxi1, "max ratio: ", maxi)
 
     format_str = """
         DELETE FROM %s
-        WHERE (screen_size*1.0)/(price*1.0) = %f
+        WHERE (screen_size*1.0)/(price*1.0) = (
+            SELECT MAX((1.0*screen_size)/(1.0*price))
+                FROM( SELECT screen_size,price FROM tv
+                UNION SELECT screen_size,price FROM hdtv
+                UNION SELECT screen_size,price FROM pdptv
+                UNION SELECT screen_size,price FROM lcdtv))
     """
     connection.commit()
     all_list = all_tv_list()
@@ -571,9 +585,11 @@ def delete_tv_price():
             print("match TV: ", tv[0])
 
     class_list = ["tv", "hdtv", "pdptv", "lcdtv"]
+    sql_literal = "DELETE FROM %s WHERE (1.0/screen_size)/(price*1.0) = %f"
     for cls in class_list:
         print("try delete ", cls)
-        cursor.execute(format_str % (cls, maxi))
+        cursor.execute(format_str % cls)
+        #cursor.execute(sql_literal % (cls,maxi))
         connection.commit()
 
     print("deleted tv price")
